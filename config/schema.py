@@ -10,15 +10,29 @@ from attendance.queries import AttendanceQuery
 from activities.queries import ActivityQuery
 from reports.queries import ReportQuery
 
+from users.mutations import Mutation as UserMutation
+from schools.mutations import Mutation as SchoolMutation
+from places.mutations import Mutation as PlaceMutation
+from placements.mutations import Mutation as PlacementMutation
+from attendance.mutations import Mutation as AttendanceMutation
+from activities.mutations import Mutation as ActivityMutation
+from reports.mutations import Mutation as ReportMutation
+
 
 class Query(UserQuery, SchoolQuery, PlaceQuery, PlacementQuery, AttendanceQuery, ActivityQuery, ReportQuery, graphene.ObjectType):
     pass
 
 
-class Mutation(graphene.ObjectType):
-    token_auth = ObtainJSONWebToken.Field()
-    verify_token = Verify.Field()
-    refresh_token = Refresh.Field()
-    logout = Revoke.Field()
+class Mutation(
+    UserMutation,
+    SchoolMutation,
+    PlaceMutation,
+    PlacementMutation,
+    AttendanceMutation,
+    ActivityMutation,
+    ReportMutation,
+    graphene.ObjectType
+):
+    pass
 
 schema = graphene.Schema(query=Query, mutation=Mutation)
