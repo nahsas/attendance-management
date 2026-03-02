@@ -13,7 +13,11 @@ SECRET_KEY = env('SECRET_KEY', default='django-insecure-change-me')
 
 DEBUG = env.bool('DEBUG', default=True)
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '0.0.0.0', '10.0.2.2'])
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -98,7 +102,16 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'http://localhost:8080',
+    'http://localhost:8081',
+    'http://localhost:19000',
+    'http://localhost:19001',
 ]
+
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_EXPOSE_HEADERS = ['Content-Type', 'Authorization']
+
+CORS_ALLOW_HEADERS = ['*']
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -116,7 +129,7 @@ SIMPLE_JWT = {
     'BLACKLIST_AFTER_ROTATION': True,
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': env('JWT_SECRET_KEY', default=SECRET_KEY),
-    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_TYPES': ('Bearer', 'JWT'),
 }
 
 GRAPHENE = {
