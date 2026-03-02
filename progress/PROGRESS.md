@@ -35,9 +35,18 @@
 - [x] Attendance APIs
 - [x] Activity & Report APIs
 
-### Phase 3: Frontend (Future)
-- [ ] React Native Setup
-- [ ] Mobile App Features
+### Phase 3: Frontend (In Progress)
+- [x] React Native Setup
+- [x] Apollo Client Configuration
+- [x] Authentication (JWT)
+- [x] Navigation Setup
+- [x] Login Screen
+- [x] Home Screen
+- [x] Attendance Screen
+- [x] Activities Screen
+- [x] Reports Screen
+- [x] Profile Screen
+- [ ] Test & Debug
 
 ---
 

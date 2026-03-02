@@ -2,6 +2,31 @@ import graphene
 from graphene_django import DjangoListField
 from users.models import User
 from users.types import UserType, UserRoleEnum
+import logging
+import jwt
+from django.conf import settings
+
+logger = logging.getLogger(__name__)
+
+
+def get_user_from_token(info):
+    auth_header = info.context.META.get('HTTP_AUTHORIZATION', '')
+    if not auth_header:
+        return None
+    
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() not in ('jwt', 'bearer'):
+        return None
+    
+    token = parts[1]
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=['HS256'])
+        email = payload.get('email')
+        if email:
+            return User.objects.get(email=email)
+    except Exception as e:
+        logger.error(f"Error decoding token: {e}")
+    return None
 
 
 class UserQuery(graphene.ObjectType):
@@ -10,9 +35,8 @@ class UserQuery(graphene.ObjectType):
     users = DjangoListField(UserType, role=UserRoleEnum(), school_id=graphene.UUID())
 
     def resolve_me(self, info):
-        if not info.context.user.is_authenticated:
-            return None
-        return info.context.user
+        user = get_user_from_token(info)
+        return user
 
     def resolve_user(self, info, id):
         return User.objects.get(id=id)

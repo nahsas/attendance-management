@@ -31,6 +31,10 @@ class Mutation(
     AttendanceMutation,
     ActivityMutation,
     ReportMutation,
+    ObtainJSONWebToken,
+    Verify,
+    Refresh,
+    Revoke,
     graphene.ObjectType
 ):
     pass
