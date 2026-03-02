@@ -13,34 +13,27 @@
 - [x] Technical Architecture
 - [x] Django Project Setup
 - [x] All Database Models
-
----
-
-## In Progress
-- [ ] Django Project Setup
-  - [x] Create Django project structure
-  - [x] Configure settings (database, apps, JWT, Graphene)
-  - [x] Create User model
-  - [x] Run migrations
-  - [ ] Test GraphQL endpoint
+- [x] GraphQL Types (User, School, Place, Placement, Attendance, Activity, Report)
+- [x] GraphQL Queries (all CRUD operations)
+- [x] GraphQL Mutations (all CRUD + business logic)
 
 ---
 
 ## Pending
 
 ### Phase 1: Foundation
-- [ ] Django Models - User & School
-- [ ] Django Models - Internship Places & Break Config
-- [ ] Django Models - Student Placements
-- [ ] Django Models - Attendance System
-- [ ] Django Models - Activities & Reports
+- [x] Django Models - User & School
+- [x] Django Models - Internship Places & Break Config
+- [x] Django Models - Student Placements
+- [x] Django Models - Attendance System
+- [x] Django Models - Activities & Reports
 
 ### Phase 2: API
-- [ ] GraphQL Schema Setup
-- [ ] User & Authentication APIs
-- [ ] School & Place APIs
-- [ ] Attendance APIs
-- [ ] Activity & Report APIs
+- [x] GraphQL Schema Setup
+- [x] User & Authentication APIs
+- [x] School & Place APIs
+- [x] Attendance APIs
+- [x] Activity & Report APIs
 
 ### Phase 3: Frontend (Future)
 - [ ] React Native Setup
