@@ -28,6 +28,9 @@ export const GET_MY_PLACEMENTS = gql`
   query GetMyPlacements {
     myPlacements {
       id
+      status
+      startDate
+      endDate
       internshipPlace {
         id
         name
@@ -42,10 +45,6 @@ export const GET_MY_PLACEMENTS = gql`
           break2End
         }
       }
-      startDate
-      endDate
-      status
-      isActive
     }
   }
 `;
@@ -57,6 +56,18 @@ export const GET_MY_ATTENDANCE = gql`
       date
       status
       actualHours
+      attendanceLogs {
+        id
+        type
+        timestamp
+      }
+      breakLogs {
+        id
+        breakNumber
+        startTime
+        endTime
+        durationMinutes
+      }
     }
   }
 `;
@@ -68,6 +79,18 @@ export const GET_TODAY_ATTENDANCE = gql`
       date
       status
       actualHours
+      attendanceLogs {
+        id
+        type
+        timestamp
+      }
+      breakLogs {
+        id
+        breakNumber
+        startTime
+        endTime
+        durationMinutes
+      }
     }
   }
 `;
@@ -84,7 +107,6 @@ export const CLOCK_IN_MUTATION = gql`
         id
         date
         status
-        clockInTime
       }
     }
   }
@@ -97,7 +119,6 @@ export const CLOCK_OUT_MUTATION = gql`
         id
         date
         status
-        clockOutTime
         actualHours
       }
     }

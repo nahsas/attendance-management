@@ -12,17 +12,27 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const isWeb = typeof window !== 'undefined' && !window.navigator?.product;
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    loadStoredAuth();
+    if (!isWeb) {
+      loadStoredAuth();
+    } else {
+      setIsLoading(false);
+    }
   }, []);
 
   const loadStoredAuth = async () => {
     try {
+      if (!AsyncStorage) {
+        setIsLoading(false);
+        return;
+      }
       const storedToken = await AsyncStorage.getItem('authToken');
       const storedUser = await AsyncStorage.getItem('user');
 
@@ -31,7 +41,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(JSON.parse(storedUser));
       }
     } catch (error) {
-      console.error('Failed to load auth:', error);
+      console.log('Failed to load auth (using session only):', error);
     } finally {
       setIsLoading(false);
     }
@@ -92,8 +102,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       const userData = await userResponse.json();
       const userInfo = userData.data.me;
 
-      await AsyncStorage.setItem('authToken', authToken);
-      await AsyncStorage.setItem('user', JSON.stringify(userInfo));
+      if (!isWeb && AsyncStorage) {
+        await AsyncStorage.setItem('authToken', authToken);
+        await AsyncStorage.setItem('user', JSON.stringify(userInfo));
+      }
 
       setToken(authToken);
       setUser(userInfo);
@@ -104,8 +116,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const logout = async () => {
     try {
-      await AsyncStorage.removeItem('authToken');
-      await AsyncStorage.removeItem('user');
+      if (!isWeb && AsyncStorage) {
+        await AsyncStorage.removeItem('authToken');
+        await AsyncStorage.removeItem('user');
+      }
       setToken(null);
       setUser(null);
     } catch (error) {

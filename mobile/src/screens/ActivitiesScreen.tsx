@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, RefreshControl, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation } from '@apollo/client';
 import { GET_MY_ACTIVITIES, CREATE_ACTIVITY_MUTATION } from '../graphql/operations';
+import { Card } from '../components/Card';
+import { Button } from '../components/Button';
+import { colors, spacing, typography, borderRadius, shadows } from '../theme';
+import { formatDate } from '../utils/helpers';
 
 export const ActivitiesScreen: React.FC = () => {
   const { data, loading, refetch } = useQuery(GET_MY_ACTIVITIES);
@@ -20,14 +25,18 @@ export const ActivitiesScreen: React.FC = () => {
   };
 
   const handleCreateActivity = async () => {
-    if (!title || !description) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!title.trim()) {
+      Alert.alert('Error', 'Please enter a title');
+      return;
+    }
+    if (!description.trim()) {
+      Alert.alert('Error', 'Please enter a description');
       return;
     }
 
     try {
       await createActivity({
-        variables: { title, description, photos: [] },
+        variables: { title: title.trim(), description: description.trim(), photos: [] },
       });
       setShowModal(false);
       setTitle('');
@@ -35,171 +44,200 @@ export const ActivitiesScreen: React.FC = () => {
       refetch();
       Alert.alert('Success', 'Activity added successfully');
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      Alert.alert('Error', error.message || 'Failed to create activity');
     }
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
       <View style={styles.header}>
         <Text style={styles.title}>Activities</Text>
         <TouchableOpacity style={styles.addButton} onPress={() => setShowModal(true)}>
-          <Text style={styles.addButtonText}>+ Add</Text>
+          <Ionicons name="add" size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
       <ScrollView 
         style={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}
+        showsVerticalScrollIndicator={false}
       >
-        {loading ? (
-          <Text style={styles.loadingText}>Loading...</Text>
-        ) : activities.length === 0 ? (
+        {loading && !refreshing ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>📝</Text>
-            <Text style={styles.emptyText}>No activities yet</Text>
-            <Text style={styles.emptySubtext}>Tap "+ Add" to log your first activity</Text>
+            <Text style={styles.emptyText}>Loading...</Text>
           </View>
+        ) : activities.length === 0 ? (
+          <Card style={styles.emptyCard}>
+            <Ionicons name="document-text-outline" size={48} color={colors.textTertiary} />
+            <Text style={styles.emptyTitle}>No activities yet</Text>
+            <Text style={styles.emptySubtitle}>Tap the + button to log your first activity</Text>
+          </Card>
         ) : (
           activities.map((activity: any) => (
-            <View key={activity.id} style={styles.activityCard}>
-              <Text style={styles.activityTitle}>{activity.title}</Text>
+            <Card key={activity.id} style={styles.activityCard}>
+              <View style={styles.activityHeader}>
+                <View style={styles.activityIcon}>
+                  <Ionicons name="document-text" size={20} color={colors.success} />
+                </View>
+                <View style={styles.activityInfo}>
+                  <Text style={styles.activityTitle}>{activity.title}</Text>
+                  <Text style={styles.activityDate}>{formatDate(activity.date)}</Text>
+                </View>
+              </View>
               <Text style={styles.activityDescription}>{activity.description}</Text>
-              <Text style={styles.activityDate}>
-                {new Date(activity.date).toLocaleDateString()}
-              </Text>
-            </View>
+            </Card>
           ))
         )}
       </ScrollView>
 
       <Modal visible={showModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add Activity</Text>
-            
-            <TextInput
-              style={styles.input}
-              placeholder="Title"
-              value={title}
-              onChangeText={setTitle}
-            />
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="Description"
-              value={description}
-              onChangeText={setDescription}
-              multiline
-              numberOfLines={4}
-            />
-
-            <View style={styles.modalActions}>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.cancelButton]} 
-                onPress={() => setShowModal(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.submitButton]}
-                onPress={handleCreateActivity}
-                disabled={creating}
-              >
-                <Text style={styles.submitButtonText}>
-                  {creating ? 'Saving...' : 'Save'}
-                </Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add Activity</Text>
+              <TouchableOpacity onPress={() => setShowModal(false)}>
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
               </TouchableOpacity>
             </View>
+            
+            <View style={styles.modalBody}>
+              <Text style={styles.inputLabel}>Title</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="What did you work on?"
+                value={title}
+                onChangeText={setTitle}
+                placeholderTextColor={colors.textTertiary}
+              />
+              
+              <Text style={styles.inputLabel}>Description</Text>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                placeholder="Describe your activities..."
+                value={description}
+                onChangeText={setDescription}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+                placeholderTextColor={colors.textTertiary}
+              />
+            </View>
+
+            <View style={styles.modalFooter}>
+              <Button
+                title="Cancel"
+                onPress={() => setShowModal(false)}
+                variant="secondary"
+                style={styles.modalButton}
+              />
+              <Button
+                title={creating ? 'Saving...' : 'Save'}
+                onPress={handleCreateActivity}
+                loading={creating}
+                style={styles.modalButton}
+              />
+            </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   header: {
-    backgroundColor: '#007AFF',
-    padding: 20,
-    paddingTop: 40,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+    borderBottomLeftRadius: borderRadius.xl,
+    borderBottomRightRadius: borderRadius.xl,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
+    ...typography.h1,
+    color: colors.textInverse,
   },
   addButton: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  addButtonText: {
-    color: '#007AFF',
-    fontSize: 14,
-    fontWeight: '600',
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   content: {
     flex: 1,
-    padding: 16,
-  },
-  loadingText: {
-    textAlign: 'center',
-    color: '#666',
-    marginTop: 20,
+    padding: spacing.md,
   },
   emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 60,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 16,
+    paddingVertical: spacing.xl * 2,
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    ...typography.body,
+    color: colors.textSecondary,
   },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 8,
+  emptyCard: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+  },
+  emptyTitle: {
+    ...typography.h3,
+    color: colors.text,
+    marginTop: spacing.md,
+  },
+  emptySubtitle: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+    textAlign: 'center',
   },
   activityCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    marginBottom: spacing.md,
+  },
+  activityHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  activityIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.success + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.sm,
+  },
+  activityInfo: {
+    flex: 1,
   },
   activityTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  activityDescription: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
+    ...typography.bodyBold,
+    color: colors.text,
   },
   activityDate: {
-    fontSize: 12,
-    color: '#999',
+    ...typography.small,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  activityDescription: {
+    ...typography.body,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
   },
   modalOverlay: {
     flex: 1,
@@ -207,55 +245,51 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    paddingBottom: 40,
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 20,
-  },
-  input: {
-    backgroundColor: '#f5f5f5',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    fontSize: 16,
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: 'top',
-  },
-  modalActions: {
+  modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  modalTitle: {
+    ...typography.h2,
+    color: colors.text,
+  },
+  modalBody: {
+    marginBottom: spacing.lg,
+  },
+  inputLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  input: {
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    fontSize: 16,
+    color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  textArea: {
+    height: 120,
+    textAlignVertical: 'top',
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
   modalButton: {
     flex: 1,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginHorizontal: 6,
-  },
-  cancelButton: {
-    backgroundColor: '#f5f5f5',
-  },
-  submitButton: {
-    backgroundColor: '#007AFF',
-  },
-  cancelButtonText: {
-    color: '#666',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

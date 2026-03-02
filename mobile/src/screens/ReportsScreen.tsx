@@ -1,7 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Modal, Alert, RefreshControl, SafeAreaView, StatusBar, KeyboardAvoidingView, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useQuery, useMutation } from '@apollo/client';
 import { GET_MY_REPORTS, CREATE_REPORT_MUTATION, SUBMIT_REPORT_MUTATION } from '../graphql/operations';
+import { Card } from '../components/Card';
+import { Button } from '../components/Button';
+import { colors, spacing, typography, borderRadius } from '../theme';
+import { getStatusColor, getStatusLabel, formatShortDate } from '../utils/helpers';
 
 export const ReportsScreen: React.FC = () => {
   const { data, loading, refetch } = useQuery(GET_MY_REPORTS);
@@ -22,8 +27,12 @@ export const ReportsScreen: React.FC = () => {
   };
 
   const handleCreateReport = async () => {
-    if (!title || !content) {
-      Alert.alert('Error', 'Please fill in all fields');
+    if (!title.trim()) {
+      Alert.alert('Error', 'Please enter a title');
+      return;
+    }
+    if (!content.trim()) {
+      Alert.alert('Error', 'Please enter content');
       return;
     }
 
@@ -40,8 +49,8 @@ export const ReportsScreen: React.FC = () => {
     try {
       await createReport({
         variables: {
-          title,
-          content,
+          title: title.trim(),
+          content: content.trim(),
           reportType,
           startDate: startDate.toISOString().split('T')[0],
           endDate: endDate.toISOString().split('T')[0],
@@ -54,7 +63,7 @@ export const ReportsScreen: React.FC = () => {
       refetch();
       Alert.alert('Success', 'Report created as draft');
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      Alert.alert('Error', error.message || 'Failed to create report');
     }
   };
 
@@ -64,265 +73,281 @@ export const ReportsScreen: React.FC = () => {
       refetch();
       Alert.alert('Success', 'Report submitted for review');
     } catch (error: any) {
-      Alert.alert('Error', error.message);
+      Alert.alert('Error', error.message || 'Failed to submit report');
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'approved': return '#34c759';
-      case 'rejected': return '#ff3b30';
-      case 'submitted': return '#007AFF';
-      default: return '#ff9500';
-    }
-  };
+  const reportTypes = [
+    { key: 'daily', label: 'Daily' },
+    { key: 'weekly', label: 'Weekly' },
+    { key: 'monthly', label: 'Monthly' },
+  ];
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
       <View style={styles.header}>
         <Text style={styles.title}>Reports</Text>
         <TouchableOpacity style={styles.addButton} onPress={() => setShowModal(true)}>
-          <Text style={styles.addButtonText}>+ New</Text>
+          <Ionicons name="add" size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
       <ScrollView 
         style={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary]} />}
+        showsVerticalScrollIndicator={false}
       >
-        {loading ? (
-          <Text style={styles.loadingText}>Loading...</Text>
-        ) : reports.length === 0 ? (
+        {loading && !refreshing ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyIcon}>📊</Text>
-            <Text style={styles.emptyText}>No reports yet</Text>
-            <Text style={styles.emptySubtext}>Tap "+ New" to create your first report</Text>
+            <Text style={styles.emptyText}>Loading...</Text>
           </View>
+        ) : reports.length === 0 ? (
+          <Card style={styles.emptyCard}>
+            <Ionicons name="bar-chart-outline" size={48} color={colors.textTertiary} />
+            <Text style={styles.emptyTitle}>No reports yet</Text>
+            <Text style={styles.emptySubtitle}>Tap the + button to create your first report</Text>
+          </Card>
         ) : (
           reports.map((report: any) => (
-            <View key={report.id} style={styles.reportCard}>
+            <Card key={report.id} style={styles.reportCard}>
               <View style={styles.reportHeader}>
-                <Text style={styles.reportTitle}>{report.title}</Text>
-                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(report.status) }]}>
-                  <Text style={styles.statusText}>{report.status.toUpperCase()}</Text>
+                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(report.status) + '20' }]}>
+                  <Text style={[styles.statusText, { color: getStatusColor(report.status) }]}>
+                    {getStatusLabel(report.status)}
+                  </Text>
+                </View>
+                <Text style={styles.reportType}>{report.reportType.toUpperCase()}</Text>
+              </View>
+              
+              <Text style={styles.reportTitle}>{report.title}</Text>
+              <Text style={styles.reportContent} numberOfLines={2}>{report.content}</Text>
+              
+              <View style={styles.reportFooter}>
+                <View style={styles.reportDate}>
+                  <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
+                  <Text style={styles.reportDateText}>
+                    {formatShortDate(report.startDate)} - {formatShortDate(report.endDate)}
+                  </Text>
                 </View>
               </View>
-              <Text style={styles.reportType}>{report.reportType.charAt(0).toUpperCase() + report.reportType.slice(1)} Report</Text>
-              <Text style={styles.reportContent} numberOfLines={2}>{report.content}</Text>
-              <Text style={styles.reportDate}>
-                {new Date(report.startDate).toLocaleDateString()} - {new Date(report.endDate).toLocaleDateString()}
-              </Text>
+
               {report.reviewNotes && (
                 <View style={styles.reviewNotes}>
-                  <Text style={styles.reviewNotesLabel}>Review Notes:</Text>
+                  <Ionicons name="chatbubble-outline" size={14} color={colors.warning} />
                   <Text style={styles.reviewNotesText}>{report.reviewNotes}</Text>
                 </View>
               )}
-              {report.status === 'draft' && (
-                <TouchableOpacity 
-                  style={styles.submitButton}
+
+              {report.status === 'DRAFT' && (
+                <Button
+                  title="Submit for Review"
                   onPress={() => handleSubmitReport(report.id)}
-                >
-                  <Text style={styles.submitButtonText}>Submit for Review</Text>
-                </TouchableOpacity>
+                  variant="primary"
+                  size="small"
+                  style={styles.submitButton}
+                />
               )}
-            </View>
+            </Card>
           ))
         )}
       </ScrollView>
 
       <Modal visible={showModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView 
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalOverlay}
+        >
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create Report</Text>
-            
-            <Text style={styles.label}>Report Type</Text>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Create Report</Text>
+              <TouchableOpacity onPress={() => setShowModal(false)}>
+                <Ionicons name="close" size={24} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.inputLabel}>Report Type</Text>
             <View style={styles.typeSelector}>
-              {['daily', 'weekly', 'monthly'].map((type) => (
+              {reportTypes.map((type) => (
                 <TouchableOpacity
-                  key={type}
-                  style={[styles.typeButton, reportType === type && styles.typeButtonActive]}
-                  onPress={() => setReportType(type)}
+                  key={type.key}
+                  style={[
+                    styles.typeButton,
+                    reportType === type.key && styles.typeButtonActive
+                  ]}
+                  onPress={() => setReportType(type.key)}
                 >
-                  <Text style={[styles.typeText, reportType === type && styles.typeTextActive]}>
-                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  <Text style={[
+                    styles.typeText,
+                    reportType === type.key && styles.typeTextActive
+                  ]}>
+                    {type.label}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
 
+            <Text style={styles.inputLabel}>Title</Text>
             <TextInput
               style={styles.input}
-              placeholder="Title"
+              placeholder="Report title"
               value={title}
               onChangeText={setTitle}
+              placeholderTextColor={colors.textTertiary}
             />
+            
+            <Text style={styles.inputLabel}>Content</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
-              placeholder="Content"
+              placeholder="Describe your work..."
               value={content}
               onChangeText={setContent}
               multiline
               numberOfLines={6}
+              textAlignVertical="top"
+              placeholderTextColor={colors.textTertiary}
             />
 
-            <View style={styles.modalActions}>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.modalCancelButton]} 
+            <View style={styles.modalFooter}>
+              <Button
+                title="Cancel"
                 onPress={() => setShowModal(false)}
-              >
-                <Text style={styles.modalCancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.modalSubmitButton]}
+                variant="secondary"
+                style={styles.modalButton}
+              />
+              <Button
+                title={creating ? 'Saving...' : 'Save as Draft'}
                 onPress={handleCreateReport}
-                disabled={creating}
-              >
-                <Text style={styles.modalSubmitButtonText}>
-                  {creating ? 'Saving...' : 'Save as Draft'}
-                </Text>
-              </TouchableOpacity>
+                loading={creating}
+                style={styles.modalButton}
+              />
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   header: {
-    backgroundColor: '#007AFF',
-    padding: 20,
-    paddingTop: 40,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+    borderBottomLeftRadius: borderRadius.xl,
+    borderBottomRightRadius: borderRadius.xl,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
+    ...typography.h1,
+    color: colors.textInverse,
   },
   addButton: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  addButtonText: {
-    color: '#007AFF',
-    fontSize: 14,
-    fontWeight: '600',
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   content: {
     flex: 1,
-    padding: 16,
-  },
-  loadingText: {
-    textAlign: 'center',
-    color: '#666',
-    marginTop: 20,
+    padding: spacing.md,
   },
   emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingTop: 60,
-  },
-  emptyIcon: {
-    fontSize: 48,
-    marginBottom: 16,
+    paddingVertical: spacing.xl * 2,
   },
   emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
+    ...typography.body,
+    color: colors.textSecondary,
   },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 8,
+  emptyCard: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+  },
+  emptyTitle: {
+    ...typography.h3,
+    color: colors.text,
+    marginTop: spacing.md,
+  },
+  emptySubtitle: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
+    textAlign: 'center',
   },
   reportCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    marginBottom: spacing.md,
   },
   reportHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
-  },
-  reportTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    flex: 1,
+    marginBottom: spacing.sm,
   },
   statusBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginLeft: 8,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
   },
   statusText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: 'bold',
+    ...typography.small,
+    fontWeight: '600',
   },
   reportType: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 8,
+    ...typography.small,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  reportTitle: {
+    ...typography.h3,
+    color: colors.text,
+    marginBottom: spacing.xs,
   },
   reportContent: {
-    fontSize: 14,
-    color: '#333',
-    marginBottom: 8,
+    ...typography.body,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
   },
-  reportDate: {
-    fontSize: 12,
-    color: '#999',
-  },
-  reviewNotes: {
-    marginTop: 12,
-    padding: 12,
-    backgroundColor: '#fff3cd',
-    borderRadius: 8,
-  },
-  reviewNotesLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#856404',
-  },
-  reviewNotesText: {
-    fontSize: 14,
-    color: '#856404',
-    marginTop: 4,
-  },
-  submitButton: {
-    marginTop: 12,
-    backgroundColor: '#007AFF',
-    padding: 12,
-    borderRadius: 8,
+  reportFooter: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+  reportDate: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  reportDateText: {
+    ...typography.small,
+    color: colors.textTertiary,
+    marginLeft: spacing.xs,
+  },
+  reviewNotes: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: colors.warning + '15',
+    padding: spacing.sm,
+    borderRadius: borderRadius.sm,
+    marginTop: spacing.sm,
+  },
+  reviewNotesText: {
+    ...typography.caption,
+    color: colors.warning,
+    marginLeft: spacing.xs,
+    flex: 1,
+  },
+  submitButton: {
+    marginTop: spacing.md,
   },
   modalOverlay: {
     flex: 1,
@@ -330,83 +355,74 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    paddingBottom: 40,
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 20,
+    ...typography.h2,
+    color: colors.text,
   },
-  label: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
+  inputLabel: {
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   typeSelector: {
     flexDirection: 'row',
-    marginBottom: 16,
+    marginBottom: spacing.md,
+    gap: spacing.sm,
   },
   typeButton: {
     flex: 1,
-    padding: 12,
-    borderRadius: 8,
+    padding: spacing.sm,
+    borderRadius: borderRadius.md,
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    marginHorizontal: 4,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   typeButtonActive: {
-    backgroundColor: '#007AFF',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
   typeText: {
-    fontSize: 14,
-    color: '#666',
-  },
-  typeTextActive: {
-    color: '#fff',
+    ...typography.caption,
+    color: colors.textSecondary,
     fontWeight: '600',
   },
+  typeTextActive: {
+    color: colors.textInverse,
+  },
   input: {
-    backgroundColor: '#f5f5f5',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
     fontSize: 16,
+    color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   textArea: {
-    height: 120,
+    height: 150,
     textAlignVertical: 'top',
   },
-  modalActions: {
+  modalFooter: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 8,
+    gap: spacing.sm,
   },
   modalButton: {
     flex: 1,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginHorizontal: 6,
-  },
-  modalCancelButton: {
-    backgroundColor: '#f5f5f5',
-  },
-  modalSubmitButton: {
-    backgroundColor: '#007AFF',
-  },
-  modalCancelButtonText: {
-    color: '#666',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  modalSubmitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
 });

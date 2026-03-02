@@ -1,6 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView, SafeAreaView, StatusBar } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../auth/AuthContext';
+import { Card } from '../components/Card';
+import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 
 export const ProfileScreen: React.FC = () => {
   const { user, logout } = useAuth();
@@ -26,209 +29,238 @@ export const ProfileScreen: React.FC = () => {
     }
   };
 
+  const menuItems = [
+    { icon: 'notifications-outline', label: 'Notifications', color: colors.warning },
+    { icon: 'lock-closed-outline', label: 'Change Password', color: colors.primary },
+    { icon: 'help-circle-outline', label: 'Help & Support', color: colors.info },
+    { icon: 'information-circle-outline', label: 'About', color: colors.textSecondary },
+  ];
+
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" backgroundColor={colors.primary} />
       <View style={styles.header}>
         <Text style={styles.title}>Profile</Text>
       </View>
 
-      <ScrollView style={styles.content}>
-        <View style={styles.profileCard}>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <Card style={styles.profileCard}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
-              {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+              {user?.firstName?.charAt(0) || '?'}{user?.lastName?.charAt(0) || ''}
             </Text>
           </View>
           <Text style={styles.name}>{user?.firstName} {user?.lastName}</Text>
           <Text style={styles.email}>{user?.email}</Text>
           <View style={styles.roleBadge}>
+            <Ionicons name="school-outline" size={14} color={colors.primary} />
             <Text style={styles.roleText}>{getRoleLabel(user?.role || '')}</Text>
           </View>
-        </View>
+        </Card>
 
-        <View style={styles.infoSection}>
+        <Card style={styles.infoCard}>
           <Text style={styles.sectionTitle}>Account Information</Text>
           
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Email</Text>
-            <Text style={styles.infoValue}>{user?.email}</Text>
+            <View style={styles.infoIcon}>
+              <Ionicons name="mail-outline" size={18} color={colors.primary} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Email</Text>
+              <Text style={styles.infoValue}>{user?.email}</Text>
+            </View>
           </View>
           
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Role</Text>
-            <Text style={styles.infoValue}>{getRoleLabel(user?.role || '')}</Text>
+            <View style={styles.infoIcon}>
+              <Ionicons name="school-outline" size={18} color={colors.primary} />
+            </View>
+            <View style={styles.infoContent}>
+              <Text style={styles.infoLabel}>Role</Text>
+              <Text style={styles.infoValue}>{getRoleLabel(user?.role || '')}</Text>
+            </View>
           </View>
           
           {user?.school && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>School</Text>
-              <Text style={styles.infoValue}>{user.school.name}</Text>
+              <View style={styles.infoIcon}>
+                <Ionicons name="business-outline" size={18} color={colors.primary} />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>School</Text>
+                <Text style={styles.infoValue}>{user.school.name}</Text>
+              </View>
             </View>
           )}
-        </View>
+        </Card>
 
-        <View style={styles.actionsSection}>
-          <TouchableOpacity style={styles.actionButton}>
-            <Text style={styles.actionIcon}>🔔</Text>
-            <Text style={styles.actionText}>Notifications</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.actionButton}>
-            <Text style={styles.actionIcon}>🔒</Text>
-            <Text style={styles.actionText}>Change Password</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.actionButton}>
-            <Text style={styles.actionIcon}>❓</Text>
-            <Text style={styles.actionText}>Help & Support</Text>
-          </TouchableOpacity>
+        <View style={styles.menuSection}>
+          {menuItems.map((item, index) => (
+            <TouchableOpacity key={index} style={styles.menuItem}>
+              <View style={[styles.menuIcon, { backgroundColor: item.color + '15' }]}>
+                <Ionicons name={item.icon as any} size={20} color={item.color} />
+              </View>
+              <Text style={styles.menuLabel}>{item.label}</Text>
+              <Ionicons name="chevron-forward" size={20} color={colors.textTertiary} />
+            </TouchableOpacity>
+          ))}
         </View>
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutButtonText}>Logout</Text>
+          <Ionicons name="log-out-outline" size={20} color={colors.danger} />
+          <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
 
         <Text style={styles.version}>Version 1.0.0</Text>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   header: {
-    backgroundColor: '#007AFF',
-    padding: 20,
-    paddingTop: 40,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+    borderBottomLeftRadius: borderRadius.xl,
+    borderBottomRightRadius: borderRadius.xl,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#fff',
+    ...typography.h1,
+    color: colors.textInverse,
   },
   content: {
     flex: 1,
-    padding: 16,
+    padding: spacing.md,
   },
   profileCard: {
-    backgroundColor: '#fff',
-    padding: 24,
-    borderRadius: 16,
     alignItems: 'center',
-    marginTop: -30,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    marginTop: -spacing.lg,
   },
   avatar: {
     width: 80,
     height: 80,
-    borderRadius: 40,
-    backgroundColor: '#007AFF',
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: spacing.md,
   },
   avatarText: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#fff',
+    color: colors.textInverse,
   },
   name: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
+    ...typography.h2,
+    color: colors.text,
   },
   email: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 12,
+    ...typography.caption,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
   },
   roleBadge: {
-    backgroundColor: '#e3f2fd',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.primary + '15',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.full,
+    marginTop: spacing.sm,
   },
   roleText: {
-    color: '#007AFF',
-    fontSize: 12,
+    ...typography.caption,
+    color: colors.primary,
     fontWeight: '600',
+    marginLeft: spacing.xs,
   },
-  infoSection: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 20,
+  infoCard: {
+    marginTop: spacing.md,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 16,
+    ...typography.bodyBold,
+    color: colors.text,
+    marginBottom: spacing.md,
   },
   infoRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 12,
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: colors.border,
+  },
+  infoIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.primary + '10',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.sm,
+  },
+  infoContent: {
+    flex: 1,
   },
   infoLabel: {
-    fontSize: 14,
-    color: '#666',
+    ...typography.small,
+    color: colors.textSecondary,
   },
   infoValue: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333',
+    ...typography.body,
+    color: colors.text,
+    marginTop: 2,
   },
-  actionsSection: {
-    marginTop: 20,
+  menuSection: {
+    marginTop: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    ...shadows.small,
   },
-  actionButton: {
-    backgroundColor: '#fff',
+  menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 10,
+    padding: spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
   },
-  actionIcon: {
-    fontSize: 20,
-    marginRight: 16,
+  menuIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: borderRadius.full,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.sm,
   },
-  actionText: {
-    fontSize: 16,
-    color: '#333',
+  menuLabel: {
+    ...typography.body,
+    color: colors.text,
+    flex: 1,
   },
   logoutButton: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 12,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
-    borderWidth: 1,
-    borderColor: '#ff3b30',
+    justifyContent: 'center',
+    backgroundColor: colors.danger + '15',
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    marginTop: spacing.lg,
   },
-  logoutButtonText: {
-    color: '#ff3b30',
-    fontSize: 16,
-    fontWeight: '600',
+  logoutText: {
+    ...typography.bodyBold,
+    color: colors.danger,
+    marginLeft: spacing.sm,
   },
   version: {
     textAlign: 'center',
-    color: '#999',
-    fontSize: 12,
-    marginTop: 20,
-    marginBottom: 40,
+    color: colors.textTertiary,
+    ...typography.small,
+    marginTop: spacing.lg,
+    marginBottom: spacing.xl,
   },
 });
