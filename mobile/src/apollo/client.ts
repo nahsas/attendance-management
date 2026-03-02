@@ -2,12 +2,21 @@ import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const isWeb = typeof window !== 'undefined' && !window.navigator?.product;
+
 const httpLink = createHttpLink({
   uri: 'http://localhost:8000/graphql/',
 });
 
 const authLink = setContext(async (_, { headers }) => {
-  const token = await AsyncStorage.getItem('authToken');
+  let token = null;
+  try {
+    if (!isWeb && AsyncStorage) {
+      token = await AsyncStorage.getItem('authToken');
+    }
+  } catch (e) {
+    console.log('AsyncStorage not available');
+  }
   return {
     headers: {
       ...headers,
