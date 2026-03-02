@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { HomeScreen } from '../screens/HomeScreen';
 import { AttendanceScreen } from '../screens/AttendanceScreen';
@@ -10,23 +10,9 @@ import { ReportsScreen } from '../screens/ReportsScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { useAuth } from '../auth/AuthContext';
+import { colors } from '../theme';
 
 const Tab = createBottomTabNavigator();
-
-const TabIcon = ({ name, focused }: { name: string; focused: boolean }) => {
-  const icons: { [key: string]: string } = {
-    Home: '🏠',
-    Attendance: '⏰',
-    Activities: '📝',
-    Reports: '📊',
-    Profile: '👤',
-  };
-  return (
-    <Text style={{ fontSize: focused ? 24 : 22, opacity: focused ? 1 : 0.6 }}>
-      {icons[name] || '•'}
-    </Text>
-  );
-};
 
 export const AppNavigator: React.FC = () => {
   const { user, isLoading } = useAuth();
@@ -43,17 +29,43 @@ export const AppNavigator: React.FC = () => {
     <NavigationContainer>
       <Tab.Navigator
         screenOptions={({ route }) => ({
-          tabBarIcon: ({ focused }) => <TabIcon name={route.name} focused={focused} />,
-          tabBarActiveTintColor: '#007AFF',
-          tabBarInactiveTintColor: '#999',
+          tabBarIcon: ({ focused, color, size }) => {
+            let iconName: keyof typeof Ionicons.glyphMap;
+
+            switch (route.name) {
+              case 'Home':
+                iconName = focused ? 'home' : 'home-outline';
+                break;
+              case 'Attendance':
+                iconName = focused ? 'time' : 'time-outline';
+                break;
+              case 'Activities':
+                iconName = focused ? 'document-text' : 'document-text-outline';
+                break;
+              case 'Reports':
+                iconName = focused ? 'bar-chart' : 'bar-chart-outline';
+                break;
+              case 'Profile':
+                iconName = focused ? 'person' : 'person-outline';
+                break;
+              default:
+                iconName = 'ellipse';
+            }
+
+            return <Ionicons name={iconName} size={size} color={color} />;
+          },
+          tabBarActiveTintColor: colors.primary,
+          tabBarInactiveTintColor: colors.textSecondary,
           headerShown: false,
           tabBarStyle: {
             paddingTop: 8,
             paddingBottom: 8,
-            height: 70,
+            height: 65,
+            backgroundColor: colors.surface,
+            borderTopColor: colors.border,
           },
           tabBarLabelStyle: {
-            fontSize: 12,
+            fontSize: 11,
             fontWeight: '500',
           },
         })}

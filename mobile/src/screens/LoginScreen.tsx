@@ -1,17 +1,24 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, SafeAreaView, KeyboardAvoidingView, Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../auth/AuthContext';
+import { colors, spacing, typography, borderRadius, shadows } from '../theme';
 
 export const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      setError('Please enter email and password');
+    if (!email.trim()) {
+      setError('Please enter your email');
+      return;
+    }
+    if (!password) {
+      setError('Please enter your password');
       return;
     }
 
@@ -19,9 +26,9 @@ export const LoginScreen: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      await login(email.trim(), password);
     } catch (err: any) {
-      setError(err.message || 'Login failed');
+      setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
       setIsLoading(false);
     }
@@ -34,41 +41,76 @@ export const LoginScreen: React.FC = () => {
         style={styles.keyboardView}
       >
         <View style={styles.content}>
-          <Text style={styles.title}>Internship Manager</Text>
-          <Text style={styles.subtitle}>Sign in to continue</Text>
+          <View style={styles.headerSection}>
+            <View style={styles.logoContainer}>
+              <Ionicons name="school" size={48} color={colors.primary} />
+            </View>
+            <Text style={styles.title}>Internship Manager</Text>
+            <Text style={styles.subtitle}>Track your internship journey</Text>
+          </View>
 
           <View style={styles.form}>
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+            <View style={styles.inputContainer}>
+              <Ionicons name="mail-outline" size={20} color={colors.textSecondary} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                placeholderTextColor={colors.textTertiary}
+              />
+            </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+            <View style={styles.inputContainer}>
+              <Ionicons name="lock-closed-outline" size={20} color={colors.textSecondary} style={styles.inputIcon} />
+              <TextInput
+                style={styles.input}
+                placeholder="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                placeholderTextColor={colors.textTertiary}
+              />
+              <TouchableOpacity 
+                style={styles.eyeButton} 
+                onPress={() => setShowPassword(!showPassword)}
+              >
+                <Ionicons 
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
+                  size={20} 
+                  color={colors.textSecondary} 
+                />
+              </TouchableOpacity>
+            </View>
 
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {error ? (
+              <View style={styles.errorContainer}>
+                <Ionicons name="alert-circle" size={16} color={colors.danger} />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
 
             <TouchableOpacity 
               style={[styles.button, isLoading && styles.buttonDisabled]}
               onPress={handleLogin}
               disabled={isLoading}
+              activeOpacity={0.8}
             >
               {isLoading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={colors.textInverse} />
               ) : (
                 <Text style={styles.buttonText}>Sign In</Text>
               )}
             </TouchableOpacity>
+          </View>
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Need help? Contact your school administrator
+            </Text>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -79,7 +121,7 @@ export const LoginScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: colors.background,
   },
   keyboardView: {
     flex: 1,
@@ -87,60 +129,94 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: spacing.lg,
+  },
+  headerSection: {
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  logoContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: borderRadius.full,
+    backgroundColor: colors.primary + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.md,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    color: '#333',
-    marginBottom: 8,
+    ...typography.h1,
+    color: colors.text,
   },
   subtitle: {
-    fontSize: 16,
-    textAlign: 'center',
-    color: '#666',
-    marginBottom: 32,
+    ...typography.body,
+    color: colors.textSecondary,
+    marginTop: spacing.xs,
   },
   form: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    ...shadows.medium,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  inputIcon: {
+    paddingHorizontal: spacing.md,
   },
   input: {
+    flex: 1,
     height: 50,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    marginBottom: 16,
     fontSize: 16,
+    color: colors.text,
+  },
+  eyeButton: {
+    paddingHorizontal: spacing.md,
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.danger + '15',
+    padding: spacing.sm,
+    borderRadius: borderRadius.sm,
+    marginBottom: spacing.md,
+  },
+  errorText: {
+    ...typography.caption,
+    color: colors.danger,
+    marginLeft: spacing.xs,
+    flex: 1,
   },
   button: {
     height: 50,
-    backgroundColor: '#007AFF',
-    borderRadius: 8,
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.md,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: spacing.sm,
+    ...shadows.small,
   },
   buttonDisabled: {
     opacity: 0.7,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    ...typography.bodyBold,
+    color: colors.textInverse,
   },
-  error: {
-    color: '#ff3b30',
-    fontSize: 14,
+  footer: {
+    alignItems: 'center',
+    marginTop: spacing.xl,
+  },
+  footerText: {
+    ...typography.small,
+    color: colors.textTertiary,
     textAlign: 'center',
-    marginBottom: 16,
   },
 });
